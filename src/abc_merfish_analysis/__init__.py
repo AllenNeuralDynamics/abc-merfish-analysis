@@ -1,5 +1,5 @@
 """ABC MERFISH analysis package"""
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 from .abc_load_thalamus import DEFAULT_ATLAS_WRAPPER
 
 # alias thalamus defaults for easier access
