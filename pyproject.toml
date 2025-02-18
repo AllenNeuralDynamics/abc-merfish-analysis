@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "abc-merfish-analysis"
-description = "Generated from aind-library-template"
+description = "Shared tools for accessing and processing ABC Atlas MERSCOPE data."
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
 ]
@@ -17,17 +17,26 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    "anndata",
+    "nibabel",
+    "pydantic",
+    "pyarrow",
+    "scipy",
+    "importlib_resources; python_version < '3.9'"
 ]
 
 [project.optional-dependencies]
+spatialdata = [
+    "spatialdata==0.2.3"
+]
+plot = [
+    "matplotlib",
+    "seaborn",
+    "colorcet",
+    "colour-science"
+]
 dev = [
-    'black',
-    'coverage',
-    'flake8',
-    'interrogate',
-    'isort',
-    'Sphinx',
-    'furo'
+    'ruff'
 ]
 
 [tool.setuptools.packages.find]
@@ -36,44 +45,7 @@ where = ["src"]
 [tool.setuptools.dynamic]
 version = {attr = "abc_merfish_analysis.__version__"}
 
-[tool.black]
-line-length = 79
-target_version = ['py310']
-exclude = '''
+[tool.setuptools_scm]
 
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | build
-    | dist
-  )/
-  | .gitignore
-)
-'''
-
-[tool.coverage.run]
-omit = ["*__init__*"]
-source = ["abc_merfish_analysis", "tests"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "if __name__ == .__main__.:",
-    "^from .* import .*",
-    "^import .*",
-    "pragma: no cover"
-]
-fail_under = 100
-
-[tool.isort]
-line_length = 79
-profile = "black"
-
-[tool.interrogate]
-exclude = ["setup.py", "docs", "build"]
-fail-under = 100
+[tool.ruff]
+line-length = 100
