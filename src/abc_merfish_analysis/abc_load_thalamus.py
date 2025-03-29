@@ -293,7 +293,7 @@ class ThalamusWrapper(AtlasWrapper):
         self,
         nuclei_names,
         taxonomy_level="cluster",
-        include_shared_clusters=False,
+        core_clusters_only=True,
         manual_annotations=True,
         annotations_df=None,
     ):
@@ -306,8 +306,8 @@ class ThalamusWrapper(AtlasWrapper):
             name(s) of thalamic nuclei to search for in the manual annotations resource
         taxonomy_level : {"subclass", "supertype", "cluster"}, default="cluster"
             level of taxonomy to return
-        include_shared_clusters : bool, default=False
-            whether to include clusters that are shared with multiple thalamic nuclei
+        core_clusters_only : bool, default=True
+            restrict to clusters primarily represented in nuclei (if False, show all annotated)
         manual_annotations : bool, default=True
             whether to use manual annotations or automatic annotations CSV
 
@@ -329,7 +329,7 @@ class ThalamusWrapper(AtlasWrapper):
         nuclei_names = [nuclei_names] if isinstance(nuclei_names, str) else nuclei_names
         all_names = []
         for name in nuclei_names:
-            if include_shared_clusters:
+            if core_clusters_only:
                 curr_names = anno.loc[anno["nuclei"].map(lambda names: name in names.split(" "))].index
             else:
                 curr_names = anno.loc[anno["nuclei"].map(lambda names: name == names.split(" ")[0])].index
@@ -343,7 +343,7 @@ class ThalamusWrapper(AtlasWrapper):
                     if manual_annotations:
                         error += "\nTry manual_annotations=False for a larger list of annotated nuclei."
                 else:
-                    error += " No non-shared clusters annotated, try include_shared_clusters=True."
+                    error += " No core clusters annotated, try core_clusters_only=True."
                 raise UserWarning(error)
         cell_types = self.get_taxonomy_label_from_alias(anno.loc[all_names, "cluster_alias"],
                                                        taxonomy_level=taxonomy_level)
@@ -354,7 +354,7 @@ class ThalamusWrapper(AtlasWrapper):
         nuclei_names,
         obs,
         taxonomy_level="cluster",
-        include_shared_clusters=False,
+        core_clusters_only=True,
         manual_annotations=True,
     ):
         """Get cells from specific thalamic nucle(i) based on manual nuclei:cluster
@@ -368,8 +368,8 @@ class ThalamusWrapper(AtlasWrapper):
             cell metadata DataFrame
         taxonomy_level : {"subclass", "supertype", "cluster"}, default="cluster"
             level of taxonomy to use for filtering obs
-        include_shared_clusters : bool, default=False
-            whether to include clusters that are shared with multiple thalamic nuclei
+        core_clusters_only : bool, default=True
+            restrict to clusters primarily represented in nuclei (if False, show all annotated)
         manual_annotations : bool, default=True
             whether to use manual annotations or automatic annotations CSV
 
@@ -382,7 +382,7 @@ class ThalamusWrapper(AtlasWrapper):
         cell_types = self.get_annotated_cell_types(
             nuclei_names,
             taxonomy_level=taxonomy_level,
-            include_shared_clusters=include_shared_clusters,
+            core_clusters_only=core_clusters_only,
             manual_annotations=manual_annotations,
         )
         obs = obs.loc[lambda df: df[taxonomy_level].isin(cell_types)]
