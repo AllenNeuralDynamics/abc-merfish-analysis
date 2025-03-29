@@ -59,6 +59,7 @@ class AtlasWrapper:
     # constants for spatial resolution of 'C57BL6J-638850' dataset
     X_RESOLUTION = Y_RESOLUTION = 10e-3
     Z_RESOLUTION = 200e-3
+    realigned_cell_metadata_path = None
 
     def __init__(self, directory=ABC_ROOT, dataset=BRAIN_LABEL, version=CURRENT_VERSION):
         # TODO: should manifest just be global?
@@ -71,7 +72,6 @@ class AtlasWrapper:
         self.dataset = dataset
         self.version = version
         self.manifest = manifest
-        self.realigned_cell_metadata_path = None
         self.files = SimpleNamespace(
             adata_raw=manifest.get_file_attributes(directory=_data, file_name=f"{dataset}/raw"),
             adata_log2=manifest.get_file_attributes(directory=_data, file_name=f"{dataset}/log2"),
@@ -603,7 +603,7 @@ class AtlasWrapper:
             ccf_img = ccf_img[:, None]
         # get index values for specified regions
         reverse_lookup = self.get_ccf_index_reverse_lookup(level=ccf_level)
-        index_values = reverse_lookup.loc[ccf_regions]
+        index_values = reverse_lookup[list(reverse_lookup.index.intersection(ccf_regions))]
 
         ##### Create binary mask to use for filtering cells #####
         # generate binary mask
@@ -637,6 +637,7 @@ class AtlasWrapper:
         return ccf_df
 
     def _get_ccf_names(self, top_nodes, level=None):
+        # TODO: does this miss a few cases of nodes not at the defined taxonomy levels?
         ccf_df = self._ccf_metadata
         ccf_ind = np.hstack(
             [
@@ -679,7 +680,7 @@ class AtlasWrapper:
         """
         if top_nodes is None:
             names = self.get_ccf_index(level=level).unique()
-        if level == "devccf":
+        elif level == "devccf":
             names = self._get_devccf_names(top_nodes)
         else:
             names = self._get_ccf_names(top_nodes, level=level)
@@ -693,7 +694,7 @@ class AtlasWrapper:
         return reverse_lookup
 
     def get_ccf_index(self, level="substructure"):
-        """Get an index mapping CCF ideas to (abbreviated) names,
+        """Get an index mapping CCF IDs to (abbreviated) names,
         at a given taxonomy level
 
         Parameters
