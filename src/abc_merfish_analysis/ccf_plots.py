@@ -584,7 +584,6 @@ def plot_multichannel_overlay(
     point_size=2e-3,
     ax=None,
     custom_xy_lims=None,
-    zoom_to_regions=None,
     **kwargs_ccf,
 ):
     """
@@ -663,6 +662,7 @@ def plot_multichannel_overlay(
                 ax=ax,
                 **kwargs_ccf,
             )
+
     with set_background(dark_background):
         if single_channel_subplots:
             cbar_mode = "each" if colorbar else None
@@ -1088,7 +1088,6 @@ def _integrate_background_cells(obs, point_hue, bg_cells):
     return obs
 
 
-
 # ----------------------------- Plot Formatting ----------------------------- #
 
 
@@ -1109,18 +1108,10 @@ def set_background(dark=True):
     EDGE_HIGHLIGHT_COLOR = "black"
     EDGE_COLOR = "grey"
 
-def _transform_pointsize(size, ax, data_width):
-    ax.set_aspect(1)
-    fig = ax.fig
-    fig.canvas.draw()
-    s = (ax.get_window_extent().width / (data_width) * 72.0 / fig.dpi) ** 2
-    return s
-
 
 def _circle_scatter(x, y, color, s, ax, **kwargs):
     circles = [
-        matplotlib.patches.CirclePolygon((xi, yi), radius=s)
-        for xi, yi, ci in zip(x, y, color)
+        matplotlib.patches.CirclePolygon((xi, yi), radius=s) for xi, yi, ci in zip(x, y, color)
     ]
     p = matplotlib.collections.PatchCollection(circles)
     p.set(color=color)
