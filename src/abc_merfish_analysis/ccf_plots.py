@@ -1,3 +1,5 @@
+import contextlib
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +13,11 @@ from . import ccf_images as cci
 from . import color_utils as cu
 
 CCF_REGIONS_DEFAULT = None
-
+# Pre-set edge_colors for common situations
+EDGE_HIGHLIGHT_COLOR = "black"
+EDGE_COLOR = "grey"
+OTHER_CATEGORY_COLOR = "grey"
+BACKGROUND_POINT_COLOR = "lightgrey"
 
 # TODO: make plotting class to cache indices, col names, etc?
 
@@ -527,7 +533,7 @@ def plot_hcr(
     # plot
     figs = []
     counts_label = _get_counts_label(adata, genes[0])
-    with matplotlib.style.context("dark_background" if dark_background else "default"):
+    with set_background(dark_background):
         if not separate_figs:
             grid = _create_axis_grid(len(sections), n_rows=1, figsize=figsize)
             # TODO: could use this pattern for other multi-section plots
@@ -575,10 +581,10 @@ def plot_multichannel_overlay(
     boundary_img=None,
     normalize_by="channels",
     colorbar=False,
-    point_size=5,
+    point_size=2e-3,
     ax=None,
     custom_xy_lims=None,
-    edge_color="darkgrey",
+    zoom_to_regions=None,
     **kwargs_ccf,
 ):
     """
@@ -614,8 +620,8 @@ def plot_multichannel_overlay(
         The normalization method. Can be "channels", "all", or None. Default is "channels".
     colorbar : bool, optional
         Whether to show the colorbar. Default is False.
-    point_size : int, optional
-        The size of the scatter plot points. Default is 5.
+    point_size : float, optional
+        The size of the scatter plot points (in data units)
 
     Returns
     -------
@@ -640,7 +646,24 @@ def plot_multichannel_overlay(
 
     colors = cu.get_color_array(n_channel, colors=colors)
 
-    with matplotlib.style.context("dark_background" if dark_background else "default"):
+    def _plot_ccf_with_colors(c, ax):
+        _circle_scatter(
+            *df[[x_col, y_col]].values.T,
+            s=point_size,
+            color=c,
+            ax=ax,
+        )
+        if ccf_images is not None:
+            plot_ccf_section(
+                ccf_images,
+                section=section,
+                section_col=section_col,
+                boundary_img=boundary_img,
+                legend=False,
+                ax=ax,
+                **kwargs_ccf,
+            )
+    with set_background(dark_background):
         if single_channel_subplots:
             cbar_mode = "each" if colorbar else None
             axes_pad = (0.15, 0.1) if colorbar else 0.05
@@ -654,14 +677,9 @@ def plot_multichannel_overlay(
             for i in range(n_channel):
                 ax = ax_subplots[i]
                 c = cu.combine_scaled_colors(colors[[i], :], coeffs[:, [i]])
-                ax.scatter(
-                    *df[[x_col, y_col]].values.T,
-                    s=point_size,
-                    marker=".",
-                    color=c,
-                )
+                _plot_ccf_with_colors(c, ax)
                 ax.set_title(columns[i])
-                _format_image_axes(ax)
+                _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
                 if colorbar:
                     # create a colorbar from list of shades of a single color
                     coeffs_cbar = np.linspace(0, 1, 256)[:, None]
@@ -674,29 +692,11 @@ def plot_multichannel_overlay(
         elif ax is None:
             _, ax = plt.subplots(figsize=figsize)
         c = cu.combine_scaled_colors(colors[:n_channel], coeffs)
-        ax.scatter(
-            *df[[x_col, y_col]].values.T,
-            s=point_size,
-            marker=".",
-            linewidth=0,
-            color=c,
-        )
+        _plot_ccf_with_colors(c, ax)
         if legend:
             for i in range(n_channel):
                 ax.scatter([], [], color=colors[i], label=columns[i])
             ax.legend(markerscale=1.5)
-        if ccf_images is not None:
-            plot_ccf_section(
-                ccf_images,
-                section=section,
-                section_col=section_col,
-                edge_color=edge_color,
-                boundary_img=boundary_img,
-                legend=False,
-                ax=ax,
-                **kwargs_ccf,
-            )
-        _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
         if single_channel_subplots:
             ax.set_title("Overlay")
             ax.figure.suptitle(f"Section {section}", color="white")
@@ -792,7 +792,7 @@ def plot_ccf_section(
     ccf_names=None,
     ccf_highlight=(),
     face_palette=None,
-    edge_color="grey",
+    edge_color=EDGE_COLOR,
     boundary_img=None,
     section_col="z_section",
     ccf_level="substructure",
@@ -1088,15 +1088,43 @@ def _integrate_background_cells(obs, point_hue, bg_cells):
     return obs
 
 
-# ------------------------- Color Palette Handling ------------------------- #
-
-# Pre-set edge_colors for common situations
-EDGE_HIGHLIGHT_COLOR = "black"
-OTHER_CATEGORY_COLOR = "grey"
-BACKGROUND_POINT_COLOR = "lightgrey"
-
 
 # ----------------------------- Plot Formatting ----------------------------- #
+
+
+@contextlib.contextmanager
+def set_background(dark=True):
+    """
+    Context manager to temporarily modify a global variable.
+
+    Args:
+        global_var: The global variable to modify (pass the actual variable, not a string).
+        new_value: The new value to assign to the global variable within the context.
+    """
+    global EDGE_HIGHLIGHT_COLOR, EDGE_COLOR
+    EDGE_HIGHLIGHT_COLOR = "white"
+    EDGE_COLOR = "dimgrey"
+    with matplotlib.style.context("dark_background" if dark else "default"):
+        yield
+    EDGE_HIGHLIGHT_COLOR = "black"
+    EDGE_COLOR = "grey"
+
+def _transform_pointsize(size, ax, data_width):
+    ax.set_aspect(1)
+    fig = ax.fig
+    fig.canvas.draw()
+    s = (ax.get_window_extent().width / (data_width) * 72.0 / fig.dpi) ** 2
+    return s
+
+
+def _circle_scatter(x, y, color, s, ax, **kwargs):
+    circles = [
+        matplotlib.patches.CirclePolygon((xi, yi), radius=s)
+        for xi, yi, ci in zip(x, y, color)
+    ]
+    p = matplotlib.collections.PatchCollection(circles)
+    p.set(color=color)
+    ax.add_collection(p)
 
 
 def _get_figure_handles(ax, figsize=(8, 4)):
