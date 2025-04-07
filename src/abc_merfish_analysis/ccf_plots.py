@@ -439,31 +439,31 @@ def plot_expression_ccf(
     # Plot
     figs = []
     for section in sections:
+        df = obs.loc[lambda df: (df[section_col] == section)]
         fig, ax = plt.subplots(figsize=figsize)
-        plot_section_overlay(
-            obs,
-            ccf_images,
-            section,
-            boundary_img=boundary_img,
-            section_col=section_col,
-            x_col=x_col,
-            y_col=y_col,
-            point_hue=gene,
-            point_palette=cmap,
-            edge_color=edge_color,
-            ccf_names=ccf_names,
-            ccf_highlight=ccf_highlight,
-            ccf_level=ccf_level,
-            custom_xy_lims=custom_xy_lims,
-            show_axes=show_axes,
-            legend=None,
-            colorbar=colorbar,
-            scatter_args=scatter_args,
-            cb_args=cb_args,
+
+        _circle_scatter(
+            *df[[x_col, y_col]].values.T,
+            s=point_size,
+            array=df[gene],
+            cmap=cmap,
             ax=ax,
-            point_size=point_size,
-            zoom_to_highlighted=zoom_to_highlighted,
+            clim=cb_vmin_vmax,
         )
+        if ccf_images is not None:
+            plot_ccf_section(
+                ccf_images,
+                section=section,
+                section_col=section_col,
+                boundary_img=boundary_img,
+                legend=False,
+                ax=ax,
+                ccf_names=ccf_names,
+                ccf_highlight=ccf_highlight,
+                ccf_level=ccf_level,
+                zoom_to_highlighted=zoom_to_highlighted,\
+            )
+        _add_colorbar(**cb_args)
         ax.set_title(f"Section {section}\n{gene}")
         figs.append(fig)
         plt.show()
@@ -1109,12 +1109,11 @@ def set_background(dark=True):
     EDGE_COLOR = "grey"
 
 
-def _circle_scatter(x, y, color, s, ax, **kwargs):
+def _circle_scatter(x, y, s, ax, color=None, array=None, **kwargs):
     circles = [
-        matplotlib.patches.CirclePolygon((xi, yi), radius=s) for xi, yi, ci in zip(x, y, color)
+        matplotlib.patches.CirclePolygon((xi, yi), radius=s) for xi, yi in zip(x, y)
     ]
-    p = matplotlib.collections.PatchCollection(circles)
-    p.set(color=color)
+    p = matplotlib.collections.PatchCollection(circles, color=color, array=array, **kwargs)
     ax.add_collection(p)
 
 
