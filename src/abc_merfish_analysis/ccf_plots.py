@@ -18,6 +18,7 @@ EDGE_HIGHLIGHT_COLOR = "black"
 EDGE_COLOR = "grey"
 OTHER_CATEGORY_COLOR = "grey"
 BACKGROUND_POINT_COLOR = "lightgrey"
+POINTSIZE_DATA = 1e-2
 
 # TODO: make plotting class to cache indices, col names, etc?
 
@@ -403,7 +404,7 @@ def plot_expression_ccf(
     nuclei=None,
     highlight=(),
     ccf_level="substructure",
-    point_size=1.5,
+    point_size=POINTSIZE_DATA,
     cmap="Blues",
     edge_color="lightgrey",
     section_col="brain_section_label",
@@ -463,7 +464,7 @@ def plot_expression_ccf(
                 ccf_level=ccf_level,
                 zoom_to_highlighted=zoom_to_highlighted,\
             )
-        _add_colorbar(**cb_args)
+        _add_colorbar(ax, **cb_args)
         ax.set_title(f"Section {section}\n{gene}")
         figs.append(fig)
         plt.show()
@@ -581,7 +582,7 @@ def plot_multichannel_overlay(
     boundary_img=None,
     normalize_by="channels",
     colorbar=False,
-    point_size=2e-3,
+    point_size=POINTSIZE_DATA*1.5,
     ax=None,
     custom_xy_lims=None,
     **kwargs_ccf,
@@ -662,11 +663,13 @@ def plot_multichannel_overlay(
                 ax=ax,
                 **kwargs_ccf,
             )
+        if custom_xy_lims is not None:
+            _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
 
     with set_background(dark_background):
         if single_channel_subplots:
             cbar_mode = "each" if colorbar else None
-            axes_pad = (0.15, 0.1) if colorbar else 0.05
+            axes_pad = (0.15, 0.05) if colorbar else (0.1, 0.05)
             ax_subplots = _create_axis_grid(
                 n_channel + 1,
                 1,
@@ -679,7 +682,6 @@ def plot_multichannel_overlay(
                 c = cu.combine_scaled_colors(colors[[i], :], coeffs[:, [i]])
                 _plot_ccf_with_colors(c, ax)
                 ax.set_title(columns[i])
-                _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
                 if colorbar:
                     # create a colorbar from list of shades of a single color
                     coeffs_cbar = np.linspace(0, 1, 256)[:, None]
@@ -962,7 +964,7 @@ def plot_ccf_shapes(
             boundary_img = cci.label_erosion(imdata, edge_width, fill_val=0, return_edges=True)
         rgba_lookup = cu.palette_to_rgba_lookup(edge_palette, index)
         im_edges = rgba_lookup[boundary_img, :]
-        ax.imshow(im_edges, **imshow_args)
+        ax.imshow(im_edges, zorder=10, **imshow_args)
 
     # generate "empty" matplotlib handles for legend
     if legend and (face_palette is not None):
@@ -1113,7 +1115,7 @@ def _circle_scatter(x, y, s, ax, color=None, array=None, **kwargs):
     circles = [
         matplotlib.patches.CirclePolygon((xi, yi), radius=s) for xi, yi in zip(x, y)
     ]
-    p = matplotlib.collections.PatchCollection(circles, color=color, array=array, **kwargs)
+    p = matplotlib.collections.PatchCollection(circles, color=color, array=array, linewidth=0, **kwargs)
     ax.add_collection(p)
 
 
