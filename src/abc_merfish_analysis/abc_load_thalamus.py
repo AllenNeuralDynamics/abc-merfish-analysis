@@ -329,7 +329,7 @@ class ThalamusWrapper(AtlasWrapper):
         nuclei_names = [nuclei_names] if isinstance(nuclei_names, str) else nuclei_names
         all_names = []
         for name in nuclei_names:
-            if core_clusters_only:
+            if not core_clusters_only:
                 curr_names = anno.loc[anno["nuclei"].map(lambda names: name in names.split(" "))].index
             else:
                 curr_names = anno.loc[anno["nuclei"].map(lambda names: name == names.split(" ")[0])].index
@@ -343,7 +343,7 @@ class ThalamusWrapper(AtlasWrapper):
                     if manual_annotations:
                         error += "\nTry manual_annotations=False for a larger list of annotated nuclei."
                 else:
-                    error += " No core clusters annotated, try core_clusters_only=True."
+                    error += " No core clusters annotated, try core_clusters_only=False."
                 raise UserWarning(error)
         cell_types = self.get_taxonomy_label_from_alias(anno.loc[all_names, "cluster_alias"],
                                                        taxonomy_level=taxonomy_level)
