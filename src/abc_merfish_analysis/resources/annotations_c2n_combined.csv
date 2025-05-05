@@ -76,7 +76,7 @@ cluster,nuclei,cluster_alias
 2644 CM-IAD-CL-PCN Sema5b Glut_4,IAD,5101.0
 2645 CM-IAD-CL-PCN Sema5b Glut_4,IAD,5104.0
 2646 CM-IAD-CL-PCN Sema5b Glut_5,CM,5096.0
-2647 CM-IAD-CL-PCN Sema5b Glut_5,IAM CM,5103.0
+2647 CM-IAD-CL-PCN Sema5b Glut_5,CM,5103.0
 2648 TH Prkcd Grin2c Glut_1,VPM VPL LGd PO LP MD VPMpc,5066.0
 2649 TH Prkcd Grin2c Glut_1,VPM VPL LGd,5067.0
 2650 TH Prkcd Grin2c Glut_2,LGd,5076.0
@@ -97,6 +97,7 @@ cluster,nuclei,cluster_alias
 2665 TH Prkcd Grin2c Glut_7,LP,5035.0
 2666 TH Prkcd Grin2c Glut_7,LP SGN,5029.0
 2667 TH Prkcd Grin2c Glut_7,SGN,5034.0
+2668 TH Prkcd Grin2c Glut_8,IAM AM IAD,5088.0
 2669 TH Prkcd Grin2c Glut_8,LP SGN,5030.0
 2670 TH Prkcd Grin2c Glut_8,LP SGN,5031.0
 2671 TH Prkcd Grin2c Glut_8,LP SGN,5032.0
