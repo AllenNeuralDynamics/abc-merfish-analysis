@@ -472,30 +472,6 @@ class AtlasWrapper:
 
         return imdata
 
-    def label_outlier_celltypes(
-        self,
-        obs,
-        type_col,
-        min_group_count=5,
-        max_num_groups=None,
-        outlier_label="other",
-        filter_cells=False,
-    ):
-        primary_celltypes = obs[type_col].value_counts().loc[lambda x: x > min_group_count].index
-        if max_num_groups is not None and len(primary_celltypes) > max_num_groups:
-            primary_celltypes = primary_celltypes[:max_num_groups]
-        if filter_cells:
-            obs = obs[obs[type_col].isin(primary_celltypes)]
-        else:
-            if (
-                obs[type_col].dtype.name == "category"
-                and outlier_label not in obs[type_col].cat.categories
-            ):
-                obs = obs.copy()
-                obs[type_col] = obs[type_col].cat.add_categories(outlier_label)
-            obs.loc[~obs[type_col].isin(primary_celltypes), type_col] = outlier_label
-        return obs
-
     def label_ccf_spatial_subset(
         self,
         cells_df,

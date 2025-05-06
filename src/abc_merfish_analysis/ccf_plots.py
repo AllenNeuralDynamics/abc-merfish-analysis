@@ -17,6 +17,7 @@ CCF_REGIONS_DEFAULT = None
 EDGE_HIGHLIGHT_COLOR = "black"
 EDGE_COLOR = "grey"
 OTHER_CATEGORY_COLOR = "grey"
+OTHER_CATEGORY = "other"
 BACKGROUND_POINT_COLOR = "lightgrey"
 POINTSIZE_DATA = 1e-2
 
@@ -40,6 +41,7 @@ def plot_ccf_overlay(
     min_group_count=10,
     min_section_count=20,
     bg_cells=None,
+    replace_missing_cats=False,
     # shape props
     face_palette=None,
     edge_color="lightgrey",
@@ -126,9 +128,16 @@ def plot_ccf_overlay(
             point_hue,
             section_col=section_col,
             min_group_count=min_group_count,
+            palette=point_palette,
+            replace_missing_cats=replace_missing_cats,
         )
         # Set color palette for cell scatter points
-        if point_palette is None and point_hue in ["class", "subclass", "supertype", "cluster"]:
+        if point_palette is None and point_hue in [
+            "class",
+            "subclass",
+            "supertype",
+            "cluster",
+        ]:
             point_palette = abc.get_taxonomy_palette(point_hue)
         point_palette = cu.generate_palette(
             obs[point_hue].unique().tolist(),
@@ -172,7 +181,9 @@ def plot_ccf_overlay(
         for i, section in enumerate(sections)
     ]
     if not separate_figs and legend is not None:
-        _combine_subplot_legends(figs[0], title=ccf_level if legend == "ccf" else point_hue)
+        _combine_subplot_legends(
+            figs[0], title=ccf_level if legend == "ccf" else point_hue
+        )
 
     return figs
 
@@ -430,7 +441,9 @@ def plot_expression_ccf(
     scatter_args = dict(hue_norm=cb_vmin_vmax, **scatter_args)
     if label is None:
         label = _get_counts_label(adata, gene)
-    cb_args = dict(cmap=cmap, cb_vmin_vmax=cb_vmin_vmax, label=label, fraction=0.046, pad=0.01)
+    cb_args = dict(
+        cmap=cmap, cb_vmin_vmax=cb_vmin_vmax, label=label, fraction=0.046, pad=0.01
+    )
 
     if sections is None:
         sections = _get_sections_to_plot(
@@ -462,7 +475,7 @@ def plot_expression_ccf(
                 ccf_names=ccf_names,
                 ccf_highlight=ccf_highlight,
                 ccf_level=ccf_level,
-                zoom_to_highlighted=zoom_to_highlighted,\
+                zoom_to_highlighted=zoom_to_highlighted,
             )
         _add_colorbar(ax, **cb_args)
         ax.set_title(f"Section {section}\n{gene}")
@@ -582,7 +595,7 @@ def plot_multichannel_overlay(
     boundary_img=None,
     normalize_by="channels",
     colorbar=False,
-    point_size=POINTSIZE_DATA*1.5,
+    point_size=POINTSIZE_DATA * 1.5,
     ax=None,
     custom_xy_lims=None,
     **kwargs_ccf,
@@ -686,7 +699,9 @@ def plot_multichannel_overlay(
                     # create a colorbar from list of shades of a single color
                     coeffs_cbar = np.linspace(0, 1, 256)[:, None]
                     c = cu.combine_scaled_colors(colors[[i], :], coeffs_cbar)
-                    plt.colorbar(cu.mappable_for_colorbar(c, vmax=scale[0, i]), cax=ax.cax)
+                    plt.colorbar(
+                        cu.mappable_for_colorbar(c, vmax=scale[0, i]), cax=ax.cax
+                    )
             ax = ax_subplots[-1]
             if colorbar:
                 # hide colorbar from overlay plot
@@ -729,7 +744,9 @@ def plot_metrics_ccf(
     for section_z in sections:
         print(section_z)
         fig, ax = plt.subplots(figsize=figsize)
-        _add_colorbar(ax, cb_vmin_vmax=[vmin, vmax], cmap=cmap, label=cb_label, shrink=0.75)
+        _add_colorbar(
+            ax, cb_vmin_vmax=[vmin, vmax], cmap=cmap, label=cb_label, shrink=0.75
+        )
 
         plot_ccf_section(
             ccf_img,
@@ -773,14 +790,20 @@ def plot_local_metric_ccf_section(
     extent = resolution * (np.array([0, imdata.shape[0], imdata.shape[1], 0]) - 0.5)
     # set non-TH voxels to NaN
     sec_img = ccf_images[:, :, section_ind]
-    th_ccf_mask = abc.get_ccf_image_mask(sec_img, ccf_regions=CCF_REGIONS_DEFAULT, distance_px=0)
+    th_ccf_mask = abc.get_ccf_image_mask(
+        sec_img, ccf_regions=CCF_REGIONS_DEFAULT, distance_px=0
+    )
     imdata[~th_ccf_mask] = np.nan
     # imdata = gaussian_filter(imdata, 2)
 
-    im = ax.imshow(imdata.T, cmap=cmap, extent=extent, interpolation="none", vmin=0, vmax=15)
+    im = ax.imshow(
+        imdata.T, cmap=cmap, extent=extent, interpolation="none", vmin=0, vmax=15
+    )
 
     # add boundaries
-    plot_ccf_section(ccf_images, section, section_col=section_col, ccf_names=None, ax=ax)
+    plot_ccf_section(
+        ccf_images, section, section_col=section_col, ccf_names=None, ax=ax
+    )
     _format_image_axes(ax)
     label = label or metric_name
     plt.colorbar(im, label=label)
@@ -845,7 +868,9 @@ def plot_ccf_section(
     if section is not None:
         section_i = section_index[section]
         img = ccf_img[:, :, section_i].T
-        boundary_img = boundary_img[:, :, section_i].T if boundary_img is not None else None
+        boundary_img = (
+            boundary_img[:, :, section_i].T if boundary_img is not None else None
+        )
     else:
         img = ccf_img
 
@@ -868,7 +893,8 @@ def plot_ccf_section(
     )
 
     edge_palette = {
-        x: EDGE_HIGHLIGHT_COLOR if x in ccf_highlight else edge_color for x in section_region_names
+        x: EDGE_HIGHLIGHT_COLOR if x in ccf_highlight else edge_color
+        for x in section_region_names
     }
 
     plot_ccf_shapes(
@@ -883,7 +909,9 @@ def plot_ccf_section(
     )
     if zoom_to_highlighted:
         try:
-            bbox = abc.X_RESOLUTION * get_bbox_for_regions(img, ccf_highlight, ccf_level)
+            bbox = abc.X_RESOLUTION * get_bbox_for_regions(
+                img, ccf_highlight, ccf_level
+            )
             _format_image_axes(ax=ax, show_axes=show_axes, custom_xy_lims=bbox)
         except ValueError:
             pass
@@ -961,7 +989,9 @@ def plot_ccf_shapes(
     if edge_palette is not None:
         if boundary_img is None:
             # TODO: keep and use ccf_level to merge if needed before erosion?
-            boundary_img = cci.label_erosion(imdata, edge_width, fill_val=0, return_edges=True)
+            boundary_img = cci.label_erosion(
+                imdata, edge_width, fill_val=0, return_edges=True
+            )
         rgba_lookup = cu.palette_to_rgba_lookup(edge_palette, index)
         im_edges = rgba_lookup[boundary_img, :]
         ax.imshow(im_edges, zorder=10, **imshow_args)
@@ -987,6 +1017,8 @@ def preprocess_categorical_plot(
     section_col="z_section",
     min_group_count=10,
     min_group_count_section=5,
+    palette=None,
+    replace_missing_cats=False,
 ):
     """Preprocess a DataFrame for plotting by filtering out sections with
     low counts and relabeling outlier cell types in each section.
@@ -1005,6 +1037,8 @@ def preprocess_categorical_plot(
         Minimum number of cells in a section to be displayed
     min_group_count_section : int
         Minimum number of cells in a group within a section to be displayed
+    replace_missing_cats : bool
+
 
     Returns
     -------
@@ -1012,19 +1046,63 @@ def preprocess_categorical_plot(
         Preprocessed DataFrame (copy of original)
     """
     # obs = obs.copy()
-    obs = abc.label_outlier_celltypes(obs, type_col, min_group_count=min_group_count)
+    obs = label_outlier_celltypes(obs, type_col, min_group_count=min_group_count)
     # Min group count by section shouldn't be larger than overall min_group_count
     # Set to the minimum so user can set min_group_count=0 to see all groups
     min_group_count_section = min(min_group_count_section, min_group_count)
     obs = obs.groupby(section_col, group_keys=False, observed=False).apply(
-        lambda x: abc.label_outlier_celltypes(x, type_col, min_group_count=min_group_count_section)
+        lambda x: label_outlier_celltypes(
+            x, type_col, min_group_count=min_group_count_section
+        )
     )
+    if palette is not None:
+        missing_cats = set(obs[type_col].unique()) - set(palette.keys())
+        if missing_cats:
+            if not replace_missing_cats:
+                raise ValueError(
+                    f"All existing categories must be represented in palette. Missing {', '.join(missing_cats)}"
+                )
+            else:
+                obs.loc[obs[type_col].isin(missing_cats), type_col] = OTHER_CATEGORY
     obs[type_col] = obs[type_col].cat.remove_unused_categories()
     return obs
 
 
+def label_outlier_celltypes(
+    obs,
+    type_col,
+    min_group_count=5,
+    max_num_groups=None,
+    outlier_label=OTHER_CATEGORY,
+    filter_cells=False,
+):
+    primary_celltypes = (
+        obs[type_col].value_counts().loc[lambda x: x > min_group_count].index
+    )
+    if max_num_groups is not None and len(primary_celltypes) > max_num_groups:
+        primary_celltypes = primary_celltypes[:max_num_groups]
+    if filter_cells:
+        obs = obs[obs[type_col].isin(primary_celltypes)]
+    else:
+        if (
+            obs[type_col].dtype.name == "category"
+            and outlier_label not in obs[type_col].cat.categories
+        ):
+            obs = obs.copy()
+            obs[type_col] = obs[type_col].cat.add_categories(outlier_label)
+        obs.loc[~obs[type_col].isin(primary_celltypes), type_col] = outlier_label
+    return obs
+
+
 def _get_sections_to_plot(
-    obs, section_col, ccf_names, ccf_highlight, ccf_images, ccf_level, exclude_empty=True, n0=0
+    obs,
+    section_col,
+    ccf_names,
+    ccf_highlight,
+    ccf_images,
+    ccf_level,
+    exclude_empty=True,
+    n0=0,
 ):
     if n0 > 0:
         sections = obs[section_col].value_counts().loc[lambda x: x > n0].index
@@ -1084,7 +1162,9 @@ def _integrate_background_cells(obs, point_hue, bg_cells):
     obs = pd.concat(
         [
             obs,
-            bg_cells.loc[bg_cells.index.difference(obs.index)].assign(**{point_hue: np.nan}),
+            bg_cells.loc[bg_cells.index.difference(obs.index)].assign(
+                **{point_hue: np.nan}
+            ),
         ]
     )
     return obs
@@ -1115,7 +1195,9 @@ def _circle_scatter(x, y, s, ax, color=None, array=None, **kwargs):
     circles = [
         matplotlib.patches.CirclePolygon((xi, yi), radius=s) for xi, yi in zip(x, y)
     ]
-    p = matplotlib.collections.PatchCollection(circles, color=color, array=array, linewidth=0, **kwargs)
+    p = matplotlib.collections.PatchCollection(
+        circles, color=color, array=array, linewidth=0, **kwargs
+    )
     ax.add_collection(p)
 
 
@@ -1169,4 +1251,6 @@ def _format_image_axes(ax, show_axes=False, set_lims="whole", custom_xy_lims=Non
             ax.set_xlim(custom_xy_lims[:2])
             ax.set_ylim(custom_xy_lims[2:])
         else:
-            print("incorrect custom_xy_lims detected, must be [x_min,x_max,y_min,y_max]")
+            print(
+                "incorrect custom_xy_lims detected, must be [x_min,x_max,y_min,y_max]"
+            )
