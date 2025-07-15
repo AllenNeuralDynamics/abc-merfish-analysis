@@ -133,7 +133,7 @@ def mappable_for_colorbar(c, vmin=0, vmax=1):
     return sm
 
 
-def generate_palette(categories, palette=glasbey, hue_label=None, **items):
+def generate_palette(categories, palette=glasbey, **items):
     """Generate a color palette dict for a given list of categories.
 
     Parameters
@@ -143,8 +143,6 @@ def generate_palette(categories, palette=glasbey, hue_label=None, **items):
     palette : dict, mappable, list of colors, or string
         Colors to use to create palette, or string to pass to sns.color_palette
         if None, use default taxonomy palette
-    hue_label : str, {'class', 'subclass', 'supertype', 'cluster'}
-        Taxonomy level to generate a palette for if palette is None
     **items : additional category=color pairs to be combined with palette
 
     Returns
