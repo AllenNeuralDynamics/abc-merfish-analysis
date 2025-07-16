@@ -822,6 +822,7 @@ def plot_ccf_section(
     section_col="z_section",
     ccf_level="substructure",
     legend=True,
+    labels=True,
     zoom_to_highlighted=False,
     show_axes=False,
     ax=None,
@@ -857,6 +858,8 @@ def plot_ccf_section(
         Level of CCF to be displayed
     legend : bool, default=True
         Whether to display a legend for the CCF region shapes
+    labels : bool, default=True
+        Whether to overlay names for highlighted regions
     zoom_to_highlighted : bool, default=False
         Whether to zoom the plot to the bounding box of the highlighted regions
     ax : matplotlib.axes.Axes, optional
@@ -909,29 +912,45 @@ def plot_ccf_section(
     )
     if zoom_to_highlighted:
         try:
-            bbox = abc.X_RESOLUTION * get_bbox_for_regions(
-                img, ccf_highlight, ccf_level
+            bbox, _ = get_bbox_for_regions(
+                img, ccf_highlight, ccf_level, resolution=abc.X_RESOLUTION
             )
             _format_image_axes(ax=ax, show_axes=show_axes, custom_xy_lims=bbox)
         except ValueError:
             pass
+    if labels:
+        for region in ccf_highlight:
+            try:
+                bbox, y = get_bbox_for_regions(
+                    img, [region], ccf_level, buffer=5, resolution=abc.X_RESOLUTION
+                )
+                ax.text(bbox[1], y, region, fontsize=10, zorder=20)
+            except ValueError:
+                continue
     ax.set_title(f"Section {section}")
 
 
-def get_bbox_for_regions(img, ccf_names, ccf_level, buffer=10):
+def get_bbox_for_regions(img, ccf_names, ccf_level, buffer=10, resolution=1):
+    """
+    Get the bounding box (x_left, x_right, y_bottom, y_top) of a set of regions
+    within a label image. Also returns y_right, the y-coordinate of the point where
+    the regions touch the bounding box on the right-hand side.
+    """
     structure_index = abc.get_ccf_index_reverse_lookup(level=ccf_level)
     ccf_ids = structure_index[ccf_names].values
-    x_inds = np.flatnonzero(np.any(np.isin(img, ccf_ids), axis=0))
-    y_inds = np.flatnonzero(np.any(np.isin(img, ccf_ids), axis=1))
+    name_img = np.isin(img, ccf_ids)
+    x_inds = np.flatnonzero(np.any(name_img, axis=0))
+    y_inds = np.flatnonzero(np.any(name_img, axis=1))
     if len(x_inds) == 0 or len(y_inds) == 0:
         raise ValueError("Specified regions not found in image")
     # reverse order for y due to CCF orientation
     bbox = np.concatenate([x_inds[[0, -1]], y_inds[[-1, 0]]])
+    y_right = np.flatnonzero(name_img[:,x_inds[-1]])[0]
     if buffer > 0:
         bbox[[0, -1]] = np.maximum(bbox[[0, -1]] - buffer, 0)
         bbox[[1]] = np.minimum(bbox[[1]] + buffer, img.shape[0])
         bbox[[2]] = np.minimum(bbox[[2]] + buffer, img.shape[1])
-    return bbox
+    return resolution * bbox, resolution * y_right
 
 
 def plot_ccf_shapes(
