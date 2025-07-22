@@ -199,9 +199,9 @@ def plot_ranked_genes(
         if count >= n_panels_x * (n_panels_y - 1):
             ax.set_xlabel("ranking")
 
-        # print the 'score' label only on the first panel per row.
+        # print the y label only on the first panel per row.
         if count % n_panels_x == 0:
-            ax.set_ylabel("score")
+            ax.set_ylabel("Z-score")
 
     if sharey is True:
         ymax += 0.3 * (ymax - ymin)
