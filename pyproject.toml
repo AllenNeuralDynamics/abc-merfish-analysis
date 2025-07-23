@@ -22,13 +22,15 @@ dependencies = [
     "pydantic",
     "pyarrow",
     "scipy",
-    "git+https://github.com/alleninstitute/abc_atlas_access.git",
+    "abc_atlas_access@git+https://github.com/alleninstitute/abc_atlas_access.git",
     "importlib_resources; python_version < '3.9'"
 ]
 
 [project.optional-dependencies]
 spatialdata = [
-    "spatialdata==0.2.3"
+    "spatialdata==0.2.3",
+    "dask==2024.4.1", 
+    "xarray==2024.07.0"
 ]
 plot = [
     "matplotlib",
