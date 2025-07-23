@@ -22,6 +22,7 @@ dependencies = [
     "pydantic",
     "pyarrow",
     "scipy",
+    "abc_atlas_access",
     "importlib_resources; python_version < '3.9'"
 ]
 
