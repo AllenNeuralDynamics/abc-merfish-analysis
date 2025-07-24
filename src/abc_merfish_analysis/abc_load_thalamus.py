@@ -101,7 +101,6 @@ class ThalamusWrapper(AtlasWrapper):
         transform="log2cpt",
         with_metadata=True,
         drop_blanks=True,
-        flip_y=False,
         realigned=False,
         include_white_matter=True,
         drop_unused=True,
@@ -126,9 +125,6 @@ class ThalamusWrapper(AtlasWrapper):
         drop_blanks : bool, default=True
             drop 'blank' gene counts from the dataset
             (blanks are barcodes not actually used in the library, counted for QC purposes)
-        flip_y : bool, default=True
-            flip y-axis coordinates so positive is up (coronal section appears
-            right-side up as expected)
         realigned : bool, default=False
             load and use for subsetting the metadata from realignment results data asset,
             containing 'ccf_realigned' coordinates
@@ -147,7 +143,7 @@ class ThalamusWrapper(AtlasWrapper):
         """
         if subset_to_TH_ZI:
             cells_md_df = self.get_combined_metadata(
-                realigned=realigned, flip_y=flip_y, drop_unused=drop_unused, **kwargs
+                realigned=realigned, drop_unused=drop_unused, **kwargs
             )
             cells_md_df = self.filter_by_thalamus_coords(
                 cells_md_df,
@@ -162,7 +158,6 @@ class ThalamusWrapper(AtlasWrapper):
                 transform=transform,
                 drop_blanks=drop_blanks,
                 with_metadata=with_metadata,
-                flip_y=flip_y,
                 realigned=realigned,
                 **kwargs,
             )
