@@ -445,21 +445,21 @@ class AtlasWrapper:
         """
         if resampled and not realigned:
             if devccf:
-                path = "/data/merscope_638850_devccf_resampled/KimLabDevCCFv001_Annotations_ASL_Oriented_10um_resampled.nii.gz"
+                path = "/data/638850_devccf-resampled/KimLabDevCCFv001_Annotations_ASL_Oriented_10um_resampled.nii.gz"
             else:
                 path = self.files.resampled_annotation.local_path
         elif not resampled and not realigned:
             if devccf:
                 path = (
-                    "/data/KimLabDevCCFv001/KimLabDevCCFv001_Annotations_ASL_Oriented_10um.nii.gz"
+                    "/data/KimLabDevCCFv001/10um/KimLabDevCCFv001_Annotations_ASL_Oriented_10um.nii.gz"
                 )
             else:
                 path = self.files.annotation_10.local_path
         elif resampled and realigned:
             if devccf:
-                path = "/data/realigned/abc_realigned_devccf_labels.nii.gz"
+                path = "/data/CCF-templates-resampled/abc_realigned_devccf_labels.nii.gz"
             else:
-                path = "/data/realigned/abc_realigned_ccf_labels.nii.gz"
+                path = "/data/CCF-templates-resampled/abc_realigned_ccf_labels.nii.gz"
         else:
             raise UserWarning("This label image is not available")
         if img_path is not None:

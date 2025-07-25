@@ -50,7 +50,7 @@ class ThalamusWrapper(AtlasWrapper):
         'PCN', 'PF', 'PO', 'PVT', 'RE', 'RT', 'SPA',
         'VAL', 'VM', 'VPL', 'VPM', 'VPMpc'
     ]
-    realigned_cell_metadata_path="/data/realigned/abc_realigned_metadata_thalamus-boundingbox.parquet"
+    realigned_cell_metadata_path="/data/CCF-templates-resampled/abc_realigned_metadata_thalamus-boundingbox.parquet"
 
     def load_standard_thalamus(self, data_structure="adata"):
         """Loads a preprocessed, neuronal thalamus subset of the ABC Atlas MERFISH dataset.
