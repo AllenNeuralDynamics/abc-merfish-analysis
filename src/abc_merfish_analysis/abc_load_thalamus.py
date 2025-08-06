@@ -339,7 +339,7 @@ class ThalamusWrapper(AtlasWrapper):
                         error += "\nTry manual_annotations=False for a larger list of annotated nuclei."
                 else:
                     error += " No core clusters annotated, try core_clusters_only=False."
-                raise UserWarning(error)
+                warnings.warn(error)
         cell_types = self.get_taxonomy_label_from_alias(anno.loc[all_names, "cluster_alias"],
                                                        taxonomy_level=taxonomy_level)
         return list(set(cell_types))
