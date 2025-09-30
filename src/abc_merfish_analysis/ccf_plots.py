@@ -1,16 +1,19 @@
 import contextlib
 
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from mpl_toolkits.axes_grid1 import ImageGrid
-from scipy.interpolate import LinearNDInterpolator
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+    import seaborn as sns
+    from mpl_toolkits.axes_grid1 import ImageGrid
+    from scipy.interpolate import LinearNDInterpolator
 
-from . import abc_load as abc
-from . import ccf_images as cci
-from . import color_utils as cu
+    from . import abc_load as abc
+    from . import ccf_images as cci
+    from . import color_utils as cu
+except ImportError:
+    raise ImportError("To use plotting functionality, install optional dependencies via abc-merfish-analysis[plot].")
 
 CCF_REGIONS_DEFAULT = None
 # Pre-set edge_colors for common situations
@@ -1069,7 +1072,7 @@ def preprocess_categorical_plot(
     # Min group count by section shouldn't be larger than overall min_group_count
     # Set to the minimum so user can set min_group_count=0 to see all groups
     min_group_count_section = min(min_group_count_section, min_group_count)
-    obs = obs.groupby(section_col, group_keys=False, observed=False).apply(
+    obs = obs.groupby(section_col, group_keys=False, observed=False, include_groups=False).apply(
         lambda x: label_outlier_celltypes(
             x, type_col, min_group_count=min_group_count_section
         )
