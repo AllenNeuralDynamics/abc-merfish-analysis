@@ -6,13 +6,12 @@ from collections import defaultdict
 from functools import cached_property, wraps, lru_cache
 from itertools import chain
 from pathlib import Path
-from types import SimpleNamespace
 
 import anndata as ad
 import nibabel
 import numpy as np
 import pandas as pd
-from abc_atlas_access.abc_atlas_cache.manifest import Manifest
+from abc_atlas_access.abc_atlas_cache.abc_project_cache import AbcProjectCache
 
 from .ccf_images import (
     cleanup_mask_regions,
@@ -62,43 +61,87 @@ class AtlasWrapper:
     realigned_cell_metadata_path = None
 
     def __init__(self, directory=ABC_ROOT, dataset=BRAIN_LABEL, version=CURRENT_VERSION):
-        # TODO: should manifest just be global?
-        with open(directory / "releases" / version / "manifest.json", "r") as file:
-            manifest = Manifest(cache_dir=directory, json_input=file)
+        abc_cache = AbcProjectCache.from_cache_dir(directory)
+        abc_cache.cache.load_manifest(f'releases/{CURRENT_VERSION}/manifest.json')
+
         _data = f"MERFISH-{dataset}"
         _taxonomy = "WMB-taxonomy"
         _data_ccf = f"MERFISH-{dataset}-CCF"
         _ccf = "Allen-CCF-2020"
         self.dataset = dataset
         self.version = version
-        self.manifest = manifest
-        self.files = SimpleNamespace(
-            adata_raw=manifest.get_file_attributes(directory=_data, file_name=f"{dataset}/raw"),
-            adata_log2=manifest.get_file_attributes(directory=_data, file_name=f"{dataset}/log2"),
-            gene_metadata=manifest.get_file_attributes(directory=_data, file_name="gene"),
-            cell_metadata=manifest.get_file_attributes(
+        self.cache = abc_cache
+        self._files = dict(
+            adata_raw=dict(directory=_data, file_name=f"{dataset}/raw"),
+            adata_log2=dict(directory=_data, file_name=f"{dataset}/log2"),
+            gene_metadata=dict(directory=_data, file_name="gene"),
+            cell_metadata=dict(
                 directory=_data_ccf, file_name="cell_metadata_with_parcellation_annotation"
             ),
-            resampled_annotation=manifest.get_file_attributes(
+            resampled_annotation=dict(
                 directory=_data_ccf, file_name="resampled_annotation"
             ),
-            annotation_10=manifest.get_file_attributes(directory=_ccf, file_name="annotation_10"),
-            ccf_metadata=manifest.get_file_attributes(
+            annotation_10=dict(
+                directory=_ccf, file_name="annotation_10"
+            ),
+            ccf_metadata=dict(
                 directory=_ccf, file_name="parcellation_to_parcellation_term_membership"
             ),
-            cluster_metadata_full=manifest.get_file_attributes(
+            cluster_metadata_full=dict(
                 directory=_taxonomy, file_name="cluster_to_cluster_annotation_membership"
             ),
-            cluster_metadata=manifest.get_file_attributes(
+            cluster_metadata=dict(
                 directory=_taxonomy, file_name="cluster_to_cluster_annotation_membership_pivoted"
             ),
-            taxonomy_metadata=manifest.get_file_attributes(
+            taxonomy_metadata=dict(
                 directory=_taxonomy, file_name="cluster_annotation_term_set"
             ),
-            scrnaseq_metadata=manifest.get_file_attributes(
+            scrnaseq_metadata=dict(
                 directory="WMB-10X", file_name="cell_metadata_with_cluster_annotation"
             ),
         )
+    
+    def get_file_version(self, key):
+        """Get the version string for a given data asset key.
+
+        Parameters
+        ----------
+        key : str
+            key for the desired data asset, must be one of:
+            'adata_raw', 'adata_log2', 'gene_metadata', 'cell_metadata',
+            'resampled_annotation', 'annotation_10', 'ccf_metadata',
+            'cluster_metadata_full', 'cluster_metadata', 'taxonomy_metadata',
+            'scrnaseq_metadata'
+
+        Returns
+        -------
+            version string for the requested data asset file
+        """
+        if key not in self._files:
+            raise ValueError(f"Invalid file key '{key}'")
+        file_info = self._files[key]
+        return self.cache._manifest.get_file_attributes(**file_info)["version"]
+
+    def get_file(self, key):
+        """Get the file path for a given data asset key.
+
+        Parameters
+        ----------
+        key : str
+            key for the desired data asset, must be one of:
+            'adata_raw', 'adata_log2', 'gene_metadata', 'cell_metadata',
+            'resampled_annotation', 'annotation_10', 'ccf_metadata',
+            'cluster_metadata_full', 'cluster_metadata', 'taxonomy_metadata',
+            'scrnaseq_metadata'
+
+        Returns
+        -------
+            Path to the requested data asset file
+        """
+        if key not in self._files:
+            raise ValueError(f"Invalid file key '{key}'")
+        file_info = self._files[key]
+        return self.cache.get_data_path(**file_info)
 
     @cached_property
     def NN_CLASSES(self):
@@ -123,7 +166,7 @@ class AtlasWrapper:
 
     @cached_property
     def taxonomy_id(self):
-        return pd.read_csv(self.files.taxonomy_metadata.local_path)["label"].iloc[0].split("_")[0]
+        return pd.read_csv(self.get_file("taxonomy_metadata"))["label"].iloc[0].split("_")[0]
 
     def load_adata(
         self,
@@ -162,8 +205,8 @@ class AtlasWrapper:
         """
         # 'log2cpv' is labelled 'log2' in the ABC Atlas; for 'log2cpm' or 'log2cpt',
         #  we load 'raw' counts and then do the transform manually later
-        adata_file = self.files.adata_log2 if transform == "log2cpv" else self.files.adata_raw
-        adata = ad.read_h5ad(adata_file.local_path, backed="r")
+        adata_file = self.get_file("adata_log2") if transform == "log2cpv" else self.get_file("adata_raw")
+        adata = ad.read_h5ad(adata_file, backed="r")
         genes = adata.var_names
         if drop_blanks:
             genes = [gene for gene in genes if "Blank" not in gene]
@@ -273,7 +316,7 @@ class AtlasWrapper:
         """Load the gene metadata csv.
         Optionally drops 'Blank' genes from the dataset.
         """
-        df = pd.read_csv(self.files.gene_metadata.local_path)
+        df = pd.read_csv(self.get_file("gene_metadata"))
         if drop_blanks:
             df = df[~df["gene_symbol"].str.contains("Blank")]
         return df
@@ -301,7 +344,7 @@ class AtlasWrapper:
         usecols = list(dtype.keys()) if drop_unused else None
 
         cells_df = pd.read_csv(
-            self.files.scrnaseq_metadata.local_path,
+            self.get_file("scrnaseq_metadata"),
             dtype=dtype,
             usecols=usecols,
             engine="pyarrow",
@@ -378,7 +421,7 @@ class AtlasWrapper:
             cells_df = pd.read_parquet(self.realigned_cell_metadata_path)
             if self.version != CURRENT_VERSION:
                 old_df = pd.read_csv(
-                    self.files.cell_metadata.local_path,
+                    self.get_file("cell_metadata"),
                     dtype=dtype,
                     usecols=usecols,
                     engine="pyarrow",
@@ -386,7 +429,7 @@ class AtlasWrapper:
                 cells_df = old_df.join(cells_df[cells_df.columns.difference(old_df.columns)])
         else:
             cells_df = pd.read_csv(
-                self.files.cell_metadata.local_path,
+                self.get_file("cell_metadata"),
                 dtype=dtype,
                 usecols=usecols,
                 engine="pyarrow",
@@ -447,14 +490,14 @@ class AtlasWrapper:
             if devccf:
                 path = "/data/638850_devccf-resampled/KimLabDevCCFv001_Annotations_ASL_Oriented_10um_resampled.nii.gz"
             else:
-                path = self.files.resampled_annotation.local_path
+                path = self.get_file("resampled_annotation")
         elif not resampled and not realigned:
             if devccf:
                 path = (
                     "/data/KimLabDevCCFv001/10um/KimLabDevCCFv001_Annotations_ASL_Oriented_10um.nii.gz"
                 )
             else:
-                path = self.files.annotation_10.local_path
+                path = self.get_file("annotation_10")
         elif resampled and realigned:
             if devccf:
                 path = "/data/CCF-templates-resampled/abc_realigned_devccf_labels.nii.gz"
@@ -608,7 +651,7 @@ class AtlasWrapper:
     @cached_property
     def _ccf_metadata(self):
         # TODO: set categorical dtypes?
-        ccf_df = pd.read_csv(self.files.ccf_metadata.local_path)
+        ccf_df = pd.read_csv(self.get_file("ccf_metadata"))
         ccf_df = ccf_df.replace("ZI-unassigned", "ZI")
         return ccf_df
 
@@ -717,66 +760,14 @@ class AtlasWrapper:
         df = self._section_metadata.set_index(section_col)["section_index"]
         return df
 
-    def save_section_index(
-        self,
-        z_col="z_section",
-        section_cols=["brain_section_label", "z_reconstructed"],
-        overwrite=False,
-    ):
-        """Saves a section index mapping to a csv file for faster access."""
-        cells_df = self.get_combined_metadata()
-        section_index = (
-            # TODO: could get section cols as any col constant across section
-            cells_df.groupby(z_col, observed=True)[section_cols].first().dropna().reset_index()
-        )
-        # Note: this transformation may vary for different datasets
-        section_index["section_index"] = section_index[z_col].apply(
-            lambda x: int(np.rint(x / self.Z_RESOLUTION))
-        )
-        path = Path("/code/abc_merfish_analysis/resources") / self._section_metadata_file
-        if path.exists() and not overwrite:
-            raise FileExistsError(
-                f"Section index already saved for {self.dataset} version {self.version}"
-            )
-        section_index.to_csv(path, header=True, index=True)
-
-    def convert_section_list(
-        self,
-        section_list,
-        query_col="z_reconstructed",
-        target_col="brain_section_label",
-    ):
-        """Converts a list of sections from one column to another using the saved section index csv.
-        Column options: {'z_section', 'z_reconstructed', 'brain_section_label'}
-        """
-        # make section index csv if not already saved
-        path = Path("/code/abc_merfish_analysis/resources") / self._section_metadata_file
-        if not path.exists():
-            self.save_section_index()
-
-        # use saved section index to convert section list
-        sec_metadata_df = pd.read_csv(path)
-        converted_list = []
-        for section in section_list:
-            converted_list.append(
-                sec_metadata_df.loc[sec_metadata_df[query_col] == section, target_col].values[0]
-            )
-        if len(converted_list) == 0:
-            query_col_values = sec_metadata_df[query_col].unique()
-            raise ValueError(
-                f"Items in section_list did not match any values in query_col={query_col}: {query_col_values}"
-            )
-
-        return converted_list
-
     @cached_property
     def _cluster_annotations(self):
-        df = pd.read_csv(self.files.cluster_metadata.local_path)
+        df = pd.read_csv(self.get_file("cluster_metadata"))
         return df
 
     @cached_property
     def _cluster_annotations_full(self):
-        df = pd.read_csv(self.files.cluster_metadata_full.local_path)
+        df = pd.read_csv(self.get_file("cluster_metadata_full"))
         return df
 
     def get_taxonomy_palette(self, taxonomy_level):
