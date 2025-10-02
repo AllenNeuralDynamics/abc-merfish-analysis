@@ -9,6 +9,7 @@ from pathlib import Path
 
 import anndata as ad
 import nibabel
+import networkx as nx
 import numpy as np
 import pandas as pd
 from abc_atlas_access.abc_atlas_cache.abc_project_cache import AbcProjectCache
@@ -839,29 +840,33 @@ class AtlasWrapper:
 
     @staticmethod
     @lru_cache
-    def _get_devccf_metadata():
-        devccf_index = pd.read_excel(
-            "/data/KimLabDevCCFv1/DevCCFv1_OntologyStructure.xlsx", header=[0, 1]
+    def _get_devccf_metadata(filter=True):
+        devccf_index = pd.read_csv(
+            "/data/KimLabDevCCFv001/KimLabDevCCFv001_MouseOntologyStructure.csv",
+            dtype={"ID": int, "Parent ID": str},
         )
-        devccf_index = devccf_index["DevCCF"].set_index("ID16")
-        return devccf_index
-
+        # some quotes have both single and double
+        for x in ["Acronym", "Name"]:
+            devccf_index[x] = devccf_index[x].str.replace("'", "")
+        if filter:
+            img = nibabel.load("/data/KimLabDevCCFv001/50um/KimLabDevCCFv001_Annotations_ASL_Oriented_50um.nii.gz")
+            imdata = np.array(img.dataobj).astype(np.int64)
+            devccf_index = devccf_index[devccf_index["ID"].isin(imdata.unique())]
+        devccf_graph = nx.from_pandas_edgelist(
+            devccf_index, source="Parent ID", target="ID", create_using=nx.DiGraph()
+        )
+        return devccf_index, devccf_graph
+    
     @classmethod
     def _get_devccf_names(cls, top_nodes, filter=True):
-        devccf_index = cls._get_devccf_metadata().reset_index().set_index("Acronym")
-        ids = devccf_index.loc[top_nodes, "ID16"].astype(str)
-        if filter:
-            devccf_index = devccf_index.query("P56")
-        names = list(
-            set(
-                chain(
-                    *(
-                        devccf_index.loc[lambda df: df["Structure ID Path16"].str.contains(x)].index
-                        for x in ids
-                    )
-                )
+        devccf_index, g = cls._get_devccf_metadata(filter=filter)
+        devccf_index = devccf_index.set_index("Acronym")
+        th_ids = list(
+            set.union(
+                *(set(nx.descendants(g, devccf_index.loc[x, "ID"])) for x in top_nodes)
             )
         )
+        names = devccf_index.set_index("ID").loc[th_ids, "Acronym"]
         return names
 
 

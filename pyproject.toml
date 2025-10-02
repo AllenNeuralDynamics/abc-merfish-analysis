@@ -18,7 +18,10 @@ dynamic = ["version"]
 
 dependencies = [
     "anndata",
+    "networkx",
     "nibabel",
+    "numpy",
+    "pandas",
     "pydantic",
     "pyarrow",
     "scipy",
