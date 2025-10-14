@@ -4,7 +4,6 @@ Functions for loading (subsets of) the ABC Atlas MERFISH dataset.
 
 from collections import defaultdict
 from functools import cached_property, wraps, lru_cache
-from itertools import chain
 from pathlib import Path
 
 import anndata as ad
@@ -29,7 +28,7 @@ except (ImportError, ModuleNotFoundError):
 package_files = files(__package__)
 
 ABC_ROOT = Path("/data/abc_atlas/")
-CURRENT_VERSION = "20230830"
+CURRENT_VERSION = "20250531"
 BRAIN_LABEL = "C57BL6J-638850"
 
 
