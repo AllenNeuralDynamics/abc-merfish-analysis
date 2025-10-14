@@ -50,7 +50,7 @@ class ThalamusWrapper(AtlasWrapper):
         'PCN', 'PF', 'PO', 'PVT', 'RE', 'RT', 'SPA',
         'VAL', 'VM', 'VPL', 'VPM', 'VPMpc'
     ]
-    realigned_cell_metadata_path="/data/CCF-templates-resampled/abc_realigned_metadata_thalamus-boundingbox.parquet"
+    realigned_cell_metadata_path="/data/CCF-templates-realigned/abc_realigned_metadata_thalamus-boundingbox.parquet"
 
     def load_standard_thalamus(self, data_structure="adata"):
         """Loads a preprocessed, neuronal thalamus subset of the ABC Atlas MERFISH dataset.
@@ -382,6 +382,64 @@ class ThalamusWrapper(AtlasWrapper):
         )
         obs = obs.loc[lambda df: df[taxonomy_level].isin(cell_types)]
         return obs
+    
+    def get_ccf_labels_image(
+        self,
+        resampled=True,
+        realigned=False,
+        devccf=False,
+        subset_to_left_hemi=False,
+        img_path=None,
+    ):
+        """Loads rasterized image volumes of the CCF parcellation as 3D numpy array.
+
+        Voxels are labelled with assigned brain structure parcellation ID #.
+        Rasterized voxels are 10 x 10 x 10 micrometers. First (x) axis is
+        anterior-to-posterior, the second (y) axis is superior-to-inferior
+        (dorsal-to-ventral) and third (z) axis is left-to-right.
+
+        See ccf_and_parcellation_annotation_tutorial.html and
+        merfish_ccf_registration_tutorial.html in ABC Atlas Data Access JupyterBook
+        (https://alleninstitute.github.io/abc_atlas_access/notebooks/) for more
+        details on the CCF image volumes.
+
+        Parameters
+        ----------
+        resampled : bool, default=True
+            if True, loads the "resampled CCF" labels, which have been aligned into
+            the MERFISH space/coordinates
+            if False, loads CCF labels that are in AllenCCFv3 average template space
+        realigned : bool, default=False
+            if resampled and realigned are both True, loads CCF labels from manual realignment,
+            which have been aligned into the MERFISH space/coordinates
+            (incompatible with resampled=False as these haven't been calculated)
+        subset_to_left_hemi : bool, default=False
+            return a trimmed image to use visualizing single-hemisphere results
+
+        Returns
+        -------
+        imdata
+            numpy array containing rasterized image volumes of CCF parcellation
+        """
+        if realigned:
+            if not resampled:
+                raise ValueError("Label volumes have not been generated for realigned=True, resampled=False")
+            if devccf:
+                path = "/data/CCF-templates-realigned/abc_realigned_devccf_labels.nii.gz"
+            else:
+                path = "/data/CCF-templates-realigned/abc_realigned_ccf_labels.nii.gz"
+            return super().get_ccf_labels_image(
+                subset_to_left_hemi=subset_to_left_hemi,
+                img_path=path,
+            )
+        else:
+            return super().get_ccf_labels_image(
+                resampled=resampled,
+                realigned=False,
+                devccf=devccf,
+                subset_to_left_hemi=subset_to_left_hemi,
+                img_path=img_path,
+            )
     
     
     # TODO: save this in a less weird format (json?)

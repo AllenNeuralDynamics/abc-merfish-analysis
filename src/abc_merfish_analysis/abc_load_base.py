@@ -451,7 +451,6 @@ class AtlasWrapper:
     def get_ccf_labels_image(
         self,
         resampled=True,
-        realigned=False,
         devccf=False,
         subset_to_left_hemi=False,
         img_path=None,
@@ -474,10 +473,6 @@ class AtlasWrapper:
             if True, loads the "resampled CCF" labels, which have been aligned into
             the MERFISH space/coordinates
             if False, loads CCF labels that are in AllenCCFv3 average template space
-        realigned : bool, default=False
-            if resampled and realigned are both True, loads CCF labels from manual realignment,
-            which have been aligned into the MERFISH space/coordinates
-            (incompatible with resampled=False as these haven't been calculated)
         subset_to_left_hemi : bool, default=False
             return a trimmed image to use visualizing single-hemisphere results
 
@@ -486,25 +481,18 @@ class AtlasWrapper:
         imdata
             numpy array containing rasterized image volumes of CCF parcellation
         """
-        if resampled and not realigned:
+        if resampled:
             if devccf:
-                path = "/data/638850_devccf-resampled/KimLabDevCCFv001_Annotations_ASL_Oriented_10um_resampled.nii.gz"
+                path = "/data/KimLabDevCCFv001_resampled/KimLabDevCCFv001_Annotations_ASL_Oriented_10um_resampled.nii.gz"
             else:
                 path = self.get_file("resampled_annotation")
-        elif not resampled and not realigned:
+        else:
             if devccf:
                 path = (
                     "/data/KimLabDevCCFv001/10um/KimLabDevCCFv001_Annotations_ASL_Oriented_10um.nii.gz"
                 )
             else:
                 path = self.get_file("annotation_10")
-        elif resampled and realigned:
-            if devccf:
-                path = "/data/CCF-templates-resampled/abc_realigned_devccf_labels.nii.gz"
-            else:
-                path = "/data/CCF-templates-resampled/abc_realigned_ccf_labels.nii.gz"
-        else:
-            raise UserWarning("This label image is not available")
         if img_path is not None:
             path = img_path
         img = nibabel.load(path)
