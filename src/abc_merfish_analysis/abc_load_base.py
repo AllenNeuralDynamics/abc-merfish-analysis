@@ -729,14 +729,14 @@ class AtlasWrapper:
 
     @property
     def _section_metadata_file(self):
-        return f"section_metadata_{self.dataset}_{self.version}.csv"
+        return f"section_metadata_{self.dataset}.csv"
 
     @cached_property
     def _section_metadata(self):
         path = package_files / "resources" / self._section_metadata_file
         if not path.is_file():
             raise FileNotFoundError(
-                f"Section metadata not saved for {self.dataset} version {self.version}"
+                f"Section metadata not saved for {self.dataset}"
             )
         df = pd.read_csv(path)
         return df
