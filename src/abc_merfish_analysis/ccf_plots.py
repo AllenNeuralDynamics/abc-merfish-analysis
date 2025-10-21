@@ -56,6 +56,7 @@ def plot_ccf_overlay(
     legend="cells",
     custom_xy_lims=None,
     show_axes=False,
+    show_labels=True,
     separate_figs=True,
     n_rows=1,
     figsize=(8, 4),
@@ -177,6 +178,7 @@ def plot_ccf_overlay(
             boundary_img=boundary_img,
             custom_xy_lims=custom_xy_lims,
             show_axes=show_axes,
+            show_labels=show_labels,
             legend=legend,
             ax=None if separate_figs else grid[i],
             figsize=figsize,
@@ -263,6 +265,7 @@ def plot_section_overlay(
     legend="cells",
     custom_xy_lims=None,
     show_axes=False,
+    show_labels=True,
     colorbar=False,
     boundary_img=None,
     zoom_to_highlighted=False,
@@ -297,6 +300,7 @@ def plot_section_overlay(
             face_palette=face_palette,
             edge_color=edge_color,
             legend=(legend == "ccf"),
+            labels=show_labels,
             zoom_to_highlighted=zoom_to_highlighted,
             show_axes=show_axes,
             ax=ax,
@@ -430,6 +434,7 @@ def plot_expression_ccf(
     label=None,
     colorbar=True,
     show_axes=False,
+    show_labels=True,
     zoom_to_highlighted=False,
     figsize=(8, 4),
     **scatter_args,
@@ -479,6 +484,7 @@ def plot_expression_ccf(
                 ccf_highlight=ccf_highlight,
                 ccf_level=ccf_level,
                 zoom_to_highlighted=zoom_to_highlighted,
+                labels=show_labels
             )
         _add_colorbar(ax, **cb_args)
         ax.set_title(f"Section {section}\n{gene}")
