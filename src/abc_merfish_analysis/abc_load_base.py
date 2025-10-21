@@ -5,6 +5,7 @@ Functions for loading (subsets of) the ABC Atlas MERFISH dataset.
 from collections import defaultdict
 from functools import cached_property, wraps, lru_cache
 from pathlib import Path
+import warnings
 
 import anndata as ad
 import nibabel
@@ -12,6 +13,10 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from abc_atlas_access.abc_atlas_cache.abc_project_cache import AbcProjectCache
+from abc_atlas_access.abc_atlas_cache.cloud_cache import (
+    MissingLocalManifestWarning,
+    ReadOnlyLocalCacheWarning
+)
 
 from .ccf_images import (
     cleanup_mask_regions,
@@ -30,6 +35,10 @@ package_files = files(__package__)
 ABC_ROOT = Path("/data/abc_atlas/")
 CURRENT_VERSION = "20250531"
 BRAIN_LABEL = "C57BL6J-638850"
+
+# ignore abc_atlas_access warnings
+warnings.filterwarnings("ignore", category=MissingLocalManifestWarning)
+warnings.filterwarnings("ignore", category=ReadOnlyLocalCacheWarning)
 
 
 def accept_anndata_input(f):

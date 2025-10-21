@@ -120,7 +120,7 @@ def plot_ccf_overlay(
             ccf_images,
             ccf_level,
             n0=min_section_count,
-            exclude_empty=bg_cells is None,
+            exclude_empty=True,
         )
     obs = obs[obs[section_col].isin(sections)]
 
@@ -679,8 +679,7 @@ def plot_multichannel_overlay(
                 ax=ax,
                 **kwargs_ccf,
             )
-        if custom_xy_lims is not None:
-            _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
+        _format_image_axes(ax, custom_xy_lims=custom_xy_lims)
 
     with set_background(dark_background):
         if single_channel_subplots:
@@ -1072,13 +1071,13 @@ def preprocess_categorical_plot(
     # Min group count by section shouldn't be larger than overall min_group_count
     # Set to the minimum so user can set min_group_count=0 to see all groups
     min_group_count_section = min(min_group_count_section, min_group_count)
-    obs = obs.groupby(section_col, group_keys=False, observed=False, include_groups=False).apply(
+    obs = obs.groupby(section_col, group_keys=False, observed=False)[obs.columns].apply(
         lambda x: label_outlier_celltypes(
             x, type_col, min_group_count=min_group_count_section
         )
     )
     if palette is not None:
-        missing_cats = set(obs[type_col].unique()) - set(palette.keys())
+        missing_cats = set(obs[type_col].unique()) - set( list(palette.keys()) + [OTHER_CATEGORY])
         if missing_cats:
             if not replace_missing_cats:
                 raise ValueError(
@@ -1181,14 +1180,9 @@ def _filter_by_xy_lims(obs, x_col, y_col, custom_xy_lims):
 def _integrate_background_cells(obs, point_hue, bg_cells):
     """Add background cells to the DataFrame of cells to display,
     with NA values for the point_hue column."""
-    obs = pd.concat(
-        [
-            obs,
-            bg_cells.loc[bg_cells.index.difference(obs.index)].assign(
-                **{point_hue: np.nan}
-            ),
-        ]
-    )
+    bg_index = bg_cells.index.difference(obs.index)
+    if len(bg_index) > 0:
+        obs = pd.concat([obs, bg_cells.loc[bg_index].drop(columns=[point_hue])])
     return obs
 
 

@@ -435,7 +435,6 @@ class ThalamusWrapper(AtlasWrapper):
         else:
             return super().get_ccf_labels_image(
                 resampled=resampled,
-                realigned=False,
                 devccf=devccf,
                 subset_to_left_hemi=subset_to_left_hemi,
                 img_path=img_path,
