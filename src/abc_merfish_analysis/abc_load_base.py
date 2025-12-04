@@ -129,7 +129,7 @@ class AtlasWrapper:
         if key not in self._files:
             raise ValueError(f"Invalid file key '{key}'")
         file_info = self._files[key]
-        return self.cache._manifest.get_file_attributes(**file_info)["version"]
+        return self.cache.cache._manifest.get_file_attributes(**file_info).version
 
     def get_file(self, key):
         """Get the file path for a given data asset key.
