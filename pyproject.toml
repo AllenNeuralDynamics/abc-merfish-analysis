@@ -25,7 +25,7 @@ dependencies = [
     "pydantic",
     "pyarrow",
     "scipy",
-    "abc_atlas_access@git+https://github.com/alleninstitute/abc_atlas_access.git",
+    "abc_atlas_access @ git+https://github.com/alleninstitute/abc_atlas_access.git@3.1.5",
     "importlib_resources; python_version < '3.9'"
 ]
 
